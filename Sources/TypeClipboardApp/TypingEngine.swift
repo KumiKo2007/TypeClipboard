@@ -24,24 +24,35 @@ enum TypingEngineError: LocalizedError {
 final class TypingEngine {
     private let keyPressDuration: UInt64 = 15_000_000 // 15 ms between key down and key up
 
-    func type(text: String, characterDelay: Double, appendReturn: Bool) async throws {
+    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode) async throws {
         guard !text.isEmpty else { throw TypingEngineError.emptyBuffer }
         guard EventPostingPermission.isGranted() else { throw TypingEngineError.accessibilityDenied }
 
         let sanitizedDelay = max(characterDelay, 0)
         let eventSource = CGEventSource(stateID: .hidSystemState)
 
-        for character in text {
-            try await send(character: character, using: eventSource, interCharacterDelay: sanitizedDelay)
+        for action in TypingSequence.actions(for: text) {
+            switch action {
+            case .text(let value):
+                try await send(text: value, using: eventSource, interCharacterDelay: sanitizedDelay)
+            case .newline:
+                // Target frameworks may ignore a Unicode string on a keyboard event.
+                // Source: https://developer.apple.com/documentation/coregraphics/cgevent/keyboardsetunicodestring(stringlength:unicodestring:)
+                let flags: CGEventFlags = newlineMode == .shiftEnter ? .maskShift : []
+                try await send(keyCode: CGKeyCode(kVK_Return), flags: flags, using: eventSource, interCharacterDelay: sanitizedDelay)
+            case .tab:
+                try await send(keyCode: CGKeyCode(kVK_Tab), flags: [], using: eventSource, interCharacterDelay: sanitizedDelay)
+            }
         }
 
         if appendReturn {
-            try await sendReturn(using: eventSource, interCharacterDelay: sanitizedDelay)
+            try await send(keyCode: CGKeyCode(kVK_Return), flags: [], using: eventSource, interCharacterDelay: sanitizedDelay)
         }
     }
 
-    private func send(character: Character, using source: CGEventSource?, interCharacterDelay delay: Double) async throws {
-        var utf16Units = Array(String(character).utf16)
+    private func send(text: String, using source: CGEventSource?, interCharacterDelay delay: Double) async throws {
+        try Task.checkCancellation()
+        var utf16Units = Array(text.utf16)
 
         guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
               let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) else {
@@ -50,22 +61,35 @@ final class TypingEngine {
 
         keyDown.keyboardSetUnicodeString(stringLength: utf16Units.count, unicodeString: &utf16Units)
         keyUp.keyboardSetUnicodeString(stringLength: utf16Units.count, unicodeString: &utf16Units)
+        markSynthetic(keyDown, keyUp)
 
-        keyDown.post(tap: .cghidEventTap)
-        try await Task.sleep(nanoseconds: keyPressDuration)
-        keyUp.post(tap: .cghidEventTap)
-        try await Task.sleep(nanoseconds: nanoseconds(for: delay))
+        try await postPair(down: keyDown, up: keyUp, delay: delay)
     }
 
-    private func sendReturn(using source: CGEventSource?, interCharacterDelay delay: Double) async throws {
-        guard let down = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_Return), keyDown: true),
-              let up = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_Return), keyDown: false) else {
+    private func send(keyCode: CGKeyCode, flags: CGEventFlags, using source: CGEventSource?, interCharacterDelay delay: Double) async throws {
+        try Task.checkCancellation()
+        guard let down = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true),
+              let up = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) else {
             throw TypingEngineError.eventCreationFailed
         }
+        down.flags = flags
+        up.flags = flags
+        markSynthetic(down, up)
 
+        try await postPair(down: down, up: up, delay: delay)
+    }
+
+    private func markSynthetic(_ down: CGEvent, _ up: CGEvent) {
+        down.setIntegerValueField(.eventSourceUserData, value: KeyboardEventTag.synthetic)
+        up.setIntegerValueField(.eventSourceUserData, value: KeyboardEventTag.synthetic)
+    }
+
+    private func postPair(down: CGEvent, up: CGEvent, delay: Double) async throws {
         down.post(tap: .cghidEventTap)
-        try await Task.sleep(nanoseconds: keyPressDuration)
+        // The key-up must be sent even if the task is cancelled during the key hold.
+        try? await Task.sleep(nanoseconds: keyPressDuration)
         up.post(tap: .cghidEventTap)
+        try Task.checkCancellation()
         try await Task.sleep(nanoseconds: nanoseconds(for: delay))
     }
 

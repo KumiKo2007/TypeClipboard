@@ -67,8 +67,56 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertEqual(typingEngine.invocations.count, 1)
         XCTAssertEqual(typingEngine.invocations[0].text, "abc")
         XCTAssertEqual(typingEngine.invocations[0].appendReturn, true)
+        XCTAssertEqual(typingEngine.invocations[0].newlineMode, .enter)
         XCTAssertEqual(typingEngine.invocations[0].characterDelay, 0.08, accuracy: 0.000_001)
-        XCTAssertEqual(viewModel.statusMessage?.text, "Typed 4 characters successfully.")
+        XCTAssertEqual(viewModel.statusMessage?.text, "Sent 4 characters. Check the target content.")
+    }
+
+    func testTrailingReturnIsOffByDefault() {
+        XCTAssertFalse(makeViewModel().appendReturn)
+    }
+
+    func testSelectedNewlineModeReachesTypingEngine() async {
+        let typingEngine = TypingEngineMock()
+        let viewModel = makeViewModel(typingEngine: typingEngine)
+        viewModel.bufferText = "a\nb"
+        viewModel.countdownSeconds = 0
+
+        viewModel.typeBuffer(newlineMode: .shiftEnter)
+        let finished = await waitUntil { !viewModel.isTyping }
+        XCTAssertTrue(finished)
+        XCTAssertEqual(typingEngine.invocations.first?.newlineMode, .shiftEnter)
+    }
+
+    func testPhysicalKeyCancelsDuringCountdown() async {
+        let monitor = KeyMonitorMock()
+        let typingEngine = TypingEngineMock()
+        let viewModel = makeViewModel(
+            typingEngine: typingEngine,
+            countdownTickNanoseconds: 500_000_000,
+            keyMonitor: monitor
+        )
+        viewModel.bufferText = "abc"
+        viewModel.countdownSeconds = 3
+
+        viewModel.typeBuffer()
+        monitor.cancel()
+        let cancelled = await waitUntil { !viewModel.isTyping }
+        XCTAssertTrue(cancelled)
+        XCTAssertTrue(typingEngine.invocations.isEmpty)
+        XCTAssertTrue(monitor.didStop)
+    }
+
+    func testUnavailableKeyboardMonitorPreventsTyping() {
+        let monitor = KeyMonitorMock()
+        monitor.failToStart = true
+        let viewModel = makeViewModel(keyMonitor: monitor)
+        viewModel.bufferText = "abc"
+
+        viewModel.typeBuffer()
+
+        XCTAssertFalse(viewModel.isTyping)
+        XCTAssertEqual(viewModel.statusMessage?.style, .error)
     }
 
     func testCancelTypingDuringCountdownStopsBeforeEngineRuns() async {
@@ -96,7 +144,8 @@ final class ClipboardViewModelTests: XCTestCase {
         typingEngine: TypingEngineMock = TypingEngineMock(),
         trusted: Bool = true,
         watcher: ClipboardWatcherMock = ClipboardWatcherMock(),
-        countdownTickNanoseconds: UInt64 = 1_000_000
+        countdownTickNanoseconds: UInt64 = 1_000_000,
+        keyMonitor: KeyMonitorMock = KeyMonitorMock()
     ) -> ClipboardViewModel {
         ClipboardViewModel(
             typingEngine: typingEngine,
@@ -104,7 +153,12 @@ final class ClipboardViewModelTests: XCTestCase {
             relauncher: RelauncherMock(),
             pasteboard: PasteboardMock(),
             clipboardWatcher: watcher,
-            countdownTickNanoseconds: countdownTickNanoseconds
+            countdownTickNanoseconds: countdownTickNanoseconds,
+            keyMonitorFactory: { onCancel, onFailure in
+                keyMonitor.onCancel = onCancel
+                keyMonitor.onFailure = onFailure
+                return keyMonitor
+            }
         )
     }
 
@@ -130,13 +184,28 @@ private final class TypingEngineMock: TypingEngineProtocol {
         let text: String
         let characterDelay: Double
         let appendReturn: Bool
+        let newlineMode: NewlineMode
     }
 
     private(set) var invocations: [Invocation] = []
 
-    func type(text: String, characterDelay: Double, appendReturn: Bool) async throws {
-        invocations.append(Invocation(text: text, characterDelay: characterDelay, appendReturn: appendReturn))
+    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode) async throws {
+        invocations.append(Invocation(text: text, characterDelay: characterDelay, appendReturn: appendReturn, newlineMode: newlineMode))
     }
+}
+
+private final class KeyMonitorMock: KeyCancellationMonitoring {
+    var onCancel: (() -> Void)?
+    var onFailure: (() -> Void)?
+    var failToStart = false
+    private(set) var didStop = false
+
+    func start() throws {
+        if failToStart { throw PhysicalKeyMonitorError.unavailable }
+    }
+
+    func stop() { didStop = true }
+    func cancel() { onCancel?() }
 }
 
 @MainActor

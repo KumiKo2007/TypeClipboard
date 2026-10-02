@@ -2,13 +2,36 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var viewModel: ClipboardViewModel
+    @AppStorage("appLanguage") private var appLanguageRaw = AppLanguage.automatic.rawValue
+    @AppStorage("inputProfile") private var inputProfileRaw = "xuexitong"
+    @AppStorage("xuexitongNewlineMode") private var xuexitongNewlineModeRaw = NewlineMode.enter.rawValue
+    @AppStorage("generalNewlineMode") private var generalNewlineModeRaw = NewlineMode.enter.rawValue
     @FocusState private var bufferFocused: Bool
 
-    private static let relativeFormatter: RelativeDateTimeFormatter = {
+    private var language: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .automatic }
+    private var selectedNewlineMode: NewlineMode {
+        NewlineMode(rawValue: inputProfileRaw == "xuexitong" ? xuexitongNewlineModeRaw : generalNewlineModeRaw) ?? .enter
+    }
+    private var newlineModeBinding: Binding<String> {
+        Binding(
+            get: { inputProfileRaw == "xuexitong" ? xuexitongNewlineModeRaw : generalNewlineModeRaw },
+            set: { value in
+                if inputProfileRaw == "xuexitong" { xuexitongNewlineModeRaw = value }
+                else { generalNewlineModeRaw = value }
+            }
+        )
+    }
+
+    private func tr(_ key: String, _ arguments: [String] = []) -> String {
+        L10n.text(key, arguments, language: language)
+    }
+
+    private func relativeDescription(for date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
-        return formatter
-    }()
+        formatter.locale = language.locale
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
@@ -40,7 +63,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("TypeClipboard")
                 .font(.system(.largeTitle, design: .rounded).weight(.semibold))
-            Text(viewModel.previewDescription)
+            Text(verbatim: viewModel.previewDescription(for: language))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             metricsRow
@@ -49,10 +72,10 @@ struct ContentView: View {
 
     private var metricsRow: some View {
         HStack(spacing: 12) {
-            Label("\(viewModel.characterCount) \(viewModel.characterCount == 1 ? "character" : "characters")", systemImage: "character.cursor.ibeam")
-            Label("\(viewModel.lineCount) \(viewModel.lineCount == 1 ? "line" : "lines")", systemImage: "text.justify")
+            Label(tr(viewModel.characterCount == 1 ? "{0} character" : "{0} characters", [String(viewModel.characterCount)]), systemImage: "character.cursor.ibeam")
+            Label(tr(viewModel.lineCount == 1 ? "{0} line" : "{0} lines", [String(viewModel.lineCount)]), systemImage: "text.justify")
             if let updated = viewModel.lastUpdatedAt {
-                Label("Updated \(Self.relativeFormatter.localizedString(for: updated, relativeTo: Date()))", systemImage: "clock.arrow.circlepath")
+                Label(tr("Updated {0}", [relativeDescription(for: updated)]), systemImage: "clock.arrow.circlepath")
             }
         }
         .font(.caption)
@@ -69,7 +92,7 @@ struct ContentView: View {
                     .focused($bufferFocused)
                     .frame(minHeight: 180, maxHeight: 240)
                 if viewModel.bufferText.isEmpty {
-                    Text("Captured text will appear here…")
+                    Text(tr("Captured text will appear here…"))
                         .foregroundStyle(.secondary)
                         .padding(.top, 12)
                         .padding(.leading, 12)
@@ -85,7 +108,7 @@ struct ContentView: View {
                     .fill(Color(nsColor: .controlBackgroundColor))
             )
         } label: {
-            Label("Typing Buffer", systemImage: "square.and.pencil")
+            Label(tr("Typing Buffer"), systemImage: "square.and.pencil")
                 .font(.title3)
         }
     }
@@ -96,14 +119,14 @@ struct ContentView: View {
                 Button {
                     viewModel.captureClipboard()
                 } label: {
-                    Label("Capture Clipboard", systemImage: "doc.on.clipboard")
+                    Label(tr("Capture Clipboard"), systemImage: "doc.on.clipboard")
                 }
                 .keyboardShortcut("v", modifiers: [.command, .shift])
 
                 Button(role: .destructive) {
                     viewModel.clearBuffer()
                 } label: {
-                    Label("Clear", systemImage: "trash")
+                    Label(tr("Clear"), systemImage: "trash")
                 }
                 .disabled(viewModel.bufferText.isEmpty)
 
@@ -113,7 +136,7 @@ struct ContentView: View {
                     Button(role: .cancel) {
                         viewModel.cancelTyping()
                     } label: {
-                        Label("Cancel Typing", systemImage: "xmark.circle")
+                        Label(tr("Cancel Typing"), systemImage: "xmark.circle")
                     }
                     .controlSize(.large)
                     .buttonStyle(.bordered)
@@ -121,9 +144,9 @@ struct ContentView: View {
                 }
 
                 Button {
-                    viewModel.typeBuffer()
+                    viewModel.typeBuffer(newlineMode: selectedNewlineMode)
                 } label: {
-                    Label(viewModel.isTyping ? "Typing…" : "Type Now", systemImage: viewModel.isTyping ? "hourglass.circle.fill" : "keyboard")
+                    Label(tr(viewModel.isTyping ? "Typing…" : "Type Now"), systemImage: viewModel.isTyping ? "hourglass.circle.fill" : "keyboard")
                         .font(.headline)
                 }
                 .controlSize(.large)
@@ -134,39 +157,70 @@ struct ContentView: View {
             Divider()
 
             settingsGrid
+            Text(tr("Any physical key cancels typing."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
     private var settingsGrid: some View {
         Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 16) {
             GridRow {
-                Label("Countdown", systemImage: "timer")
+                Label(tr("Countdown"), systemImage: "timer")
                     .foregroundStyle(.primary)
                 Stepper(value: $viewModel.countdownSeconds, in: viewModel.countdownRange) {
-                    Text(viewModel.countdownDescription)
+                    Text(viewModel.countdownDescription(for: language))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             GridRow {
-                Label("Per-character delay", systemImage: "speedometer")
+                Label(tr("Per-character delay"), systemImage: "speedometer")
                 VStack(alignment: .leading, spacing: 6) {
                     Slider(value: $viewModel.perCharacterDelay, in: viewModel.characterDelayRange)
-                    Text("Current: \(viewModel.delayDescription)")
+                    Text(tr("Current: {0}", [tr("{0} ms", [String(Int(viewModel.perCharacterDelay * 1_000))])]))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
             GridRow {
-                Label("Automation", systemImage: "bolt.fill")
+                Label(tr("Automation"), systemImage: "bolt.fill")
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle(isOn: $viewModel.autoCapture) {
-                        Text("Update buffer when the clipboard changes")
+                        Text(tr("Update buffer when the clipboard changes"))
                     }
                     Toggle(isOn: $viewModel.appendReturn) {
-                        Text("Press Return after typing")
+                        Text(tr("Press Return after typing"))
                     }
+                }
+            }
+
+            GridRow {
+                Label(tr("Language"), systemImage: "globe")
+                Picker(tr("Language"), selection: $appLanguageRaw) {
+                    Text(tr("Auto (System)")).tag(AppLanguage.automatic.rawValue)
+                    Text(tr("English")).tag(AppLanguage.english.rawValue)
+                    Text(tr("Simplified Chinese")).tag(AppLanguage.simplifiedChinese.rawValue)
+                }
+                .labelsHidden()
+            }
+
+            GridRow {
+                Label(tr("Input profile"), systemImage: "keyboard")
+                VStack(alignment: .leading, spacing: 6) {
+                    Picker(tr("Input profile"), selection: $inputProfileRaw) {
+                        Text(tr("Xuexitong")).tag("xuexitong")
+                        Text(tr("General")).tag("general")
+                    }
+                    .labelsHidden()
+                    Picker(tr("Newline key"), selection: newlineModeBinding) {
+                        Text(tr("Enter")).tag(NewlineMode.enter.rawValue)
+                        Text(tr("Shift+Enter")).tag(NewlineMode.shiftEnter.rawValue)
+                    }
+                    Text(tr("Choose the mode that inserts a newline in the target editor."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -176,7 +230,7 @@ struct ContentView: View {
     private var statusSection: some View {
         Group {
             if let status = viewModel.statusMessage {
-                StatusBanner(message: status)
+                StatusBanner(message: status, language: language)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: viewModel.statusMessage?.id)
@@ -191,16 +245,16 @@ struct ContentView: View {
                             .font(.title3)
                             .foregroundStyle(Color.orange)
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Enable Accessibility")
+                            Text(tr("Enable Accessibility"))
                                 .font(.headline)
-                            Text("macOS requires accessibility permission so TypeClipboard can simulate keystrokes. Select “Open Settings”, enable TypeClipboard, then restart the app to apply the change.")
+                            Text(tr("macOS requires accessibility permission so TypeClipboard can simulate keystrokes. Select “Open Settings”, enable TypeClipboard, then restart the app to apply the change."))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             HStack(spacing: 12) {
-                                Button("Open Settings") {
+                                Button(tr("Open Settings")) {
                                     viewModel.requestAccessibilityAccess()
                                 }
-                                Button("Restart App") {
+                                Button(tr("Restart App")) {
                                     viewModel.restartApplicationForAccessibility()
                                 }
                             }
@@ -214,12 +268,13 @@ struct ContentView: View {
 
 struct StatusBanner: View {
     let message: ClipboardViewModel.StatusMessage
+    let language: AppLanguage
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             Image(systemName: iconName(for: message.style))
                 .font(.title3)
-            Text(message.text)
+            Text(verbatim: message.localizedText(for: language))
                 .font(.callout)
             Spacer()
         }
