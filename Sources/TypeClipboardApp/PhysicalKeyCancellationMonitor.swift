@@ -6,9 +6,10 @@ enum PhysicalKeyMonitorError: Error {
     case unavailable
 }
 
+/// All lifecycle calls and callbacks run on the main run loop.
 /// An active event tap is required so the cancelling key does not reach the target editor.
 /// Source: https://developer.apple.com/documentation/coregraphics/cgeventtapoptions
-final class PhysicalKeyCancellationMonitor {
+final class PhysicalKeyCancellationMonitor: @unchecked Sendable {
     private let onCancel: () -> Void
     private let onFailure: () -> Void
     private var tap: CFMachPort?
