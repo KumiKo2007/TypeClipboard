@@ -1,5 +1,7 @@
 # Building TypeClipboard.app with Xcode
 
+[简体中文构建说明](GUIDE.zh-CN.md)
+
 These steps produce a local `.app` bundle directly from Xcode without requiring a Developer ID or Mac App Store signing.
 
 ## Prerequisites
@@ -14,3 +16,5 @@ These steps produce a local `.app` bundle directly from Xcode without requiring 
 5. Build the app with **Product ▸ Build** (⌘B).
 6. Reveal the output via **Product ▸ Show Build Folder in Finder**. The compiled bundle lives at `Build/Products/Release/TypeClipboardApp.app` (or `Debug` if you left the default configuration).
 7. Run the app from that location, or compress the `.app` if you want to share it outside of Xcode. For wider distribution, you can also use `scripts/build-app-bundle.sh` to embed the Swift runtime and ad-hoc sign in one step.
+
+After launching, grant Accessibility permission for simulated keystrokes. If the app reports that keyboard monitoring is unavailable, also grant Input Monitoring permission. See the [README](README.md) for input profiles, language selection, and cancellation behavior.
