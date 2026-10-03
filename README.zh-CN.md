@@ -4,6 +4,8 @@
 
 TypeClipboard 是一款支持中英文切换的 SwiftUI macOS 工具，将可编辑缓冲区中的文本模拟为键盘输入。1.0.3 版加入多行代码输入、网页编辑器自动补全大括号的可选处理，以及按任意实体键取消。它适合普通粘贴不可用的远程会话和网页代码编辑器。应用只负责发送按键，无法验证目标编辑器最终保存的内容。
 
+本项目基于采用 MIT 许可证的 [ArbenP/TypeClipboard](https://github.com/ArbenP/TypeClipboard) 改进；原项目的灵感来自 Windows 版 [jlaundry/TypeClipboard](https://github.com/jlaundry/TypeClipboard)。
+
 ## 功能
 
 - 从剪贴板捕获纯文本，并在输入前编辑缓冲区
@@ -17,7 +19,7 @@ TypeClipboard 是一款支持中英文切换的 SwiftUI macOS 工具，将可编
 
 ## 获取应用与权限
 
-最新源码版本为 1.0.3。使用 Swift 6.2 或更新版本运行 `./scripts/build-app-bundle.sh`，生成的应用位于 `dist/TypeClipboard.app`。[Releases 页面](https://github.com/ArbenP/TypeClipboard/releases)的预构建版本可能暂时较旧。应用需要 macOS 13 或更高版本。
+最新源码版本为 1.0.3。使用 Swift 6.2 或更新版本运行 `./scripts/build-app-bundle.sh`，生成的应用位于 `dist/TypeClipboard.app`。本仓库尚未发布预构建的 [Release](https://github.com/KumiKo2007/TypeClipboard/releases)。应用需要 macOS 13 或更高版本。
 
 首次启动时，在应用提示中点击“打开设置”，于“隐私与安全性 ▸ 辅助功能”启用 TypeClipboard，然后重新启动。若提示无法监听键盘，还需在“隐私与安全性 ▸ 输入监控”中启用 TypeClipboard。取消监听无法启动时，应用不会开始模拟输入。
 

@@ -4,7 +4,7 @@
 
 TypeClipboard is a bilingual SwiftUI macOS utility that replays an editable text buffer as live keyboard input. Version 1.0.3 adds multiline code typing, configurable handling for browser editors that auto-close braces, and cancellation with any physical key. It is useful for remote sessions and browser code editors where ordinary paste is unavailable. The app sends keystrokes; it cannot verify what the target editor ultimately stores.
 
-Inspired by [jlaundry/TypeClipboard](https://github.com/jlaundry/TypeClipboard) for Windows.
+This project is based on [ArbenP/TypeClipboard](https://github.com/ArbenP/TypeClipboard) under the MIT License. The original project was inspired by [jlaundry/TypeClipboard](https://github.com/jlaundry/TypeClipboard) for Windows.
 
 ## Features
 
@@ -19,7 +19,7 @@ Inspired by [jlaundry/TypeClipboard](https://github.com/jlaundry/TypeClipboard) 
 
 ## Get the app
 
-The latest source is version 1.0.3. Build it with `./scripts/build-app-bundle.sh` using Swift 6.2 or newer; the app will be in `dist/TypeClipboard.app`. [Prebuilt releases](https://github.com/ArbenP/TypeClipboard/releases) may contain an older version until a new release is published.
+The latest source is version 1.0.3. Build it with `./scripts/build-app-bundle.sh` using Swift 6.2 or newer; the app will be in `dist/TypeClipboard.app`. This repository does not yet have a prebuilt [release](https://github.com/KumiKo2007/TypeClipboard/releases).
 
 ## First Run / Permissions
 

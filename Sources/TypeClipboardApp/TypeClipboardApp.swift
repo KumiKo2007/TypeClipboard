@@ -24,7 +24,7 @@ struct TypeClipboardApp: App {
             }
             CommandGroup(replacing: .help) {
                 Button(L10n.text("TypeClipboard Help", language: language)) {
-                    if let url = URL(string: "https://github.com/ArbenP/TypeClipboard") {
+                    if let url = URL(string: "https://github.com/KumiKo2007/TypeClipboard") {
                         NSWorkspace.shared.open(url)
                     }
                 }
