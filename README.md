@@ -19,7 +19,9 @@ This project is based on [ArbenP/TypeClipboard](https://github.com/ArbenP/TypeCl
 
 ## Get the app
 
-The latest source is version 1.0.3. Build it with `./scripts/build-app-bundle.sh` using Swift 6.2 or newer; the app will be in `dist/TypeClipboard.app`. This repository does not yet have a prebuilt [release](https://github.com/KumiKo2007/TypeClipboard/releases).
+Download `TypeClipboard-1.0.3-macos-universal.zip` from the [v1.0.3 release](https://github.com/KumiKo2007/TypeClipboard/releases/tag/v1.0.3). It supports Intel and Apple silicon Macs running macOS 13 or newer. Unzip it and open `TypeClipboard.app`. The app is ad-hoc signed and not notarized; if macOS blocks it, right-click the app and choose **Open**. You can verify the archive with the accompanying `.sha256` file.
+
+To build from source, use Swift 6.2 or newer and run `./scripts/build-app-bundle.sh`. The result is `dist/TypeClipboard.app`.
 
 ## First Run / Permissions
 

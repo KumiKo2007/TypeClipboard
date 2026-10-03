@@ -51,12 +51,12 @@ xcrun swift-stdlib-tool --copy --platform macosx \
   --scan-executable "$MACOS_DIR/$EXECUTABLE_NAME" \
   --scan-folder "$BUILD_DIR" >/dev/null
 
-printf "▶︎ Performing ad-hoc codesign\n"
-codesign --force --deep --sign - "$APP_DIR"
-
 cat <<EOF > "$CONTENTS_DIR/PkgInfo"
 APPL????
 EOF
+
+printf "▶︎ Performing ad-hoc codesign\n"
+codesign --force --deep --sign - "$APP_DIR"
 
 printf "\n✅ App bundle ready: %s\n" "$APP_DIR"
 printf "   You can compress and distribute this .app or notarize/sign it with your Developer ID.\n"

@@ -19,7 +19,9 @@ TypeClipboard 是一款支持中英文切换的 SwiftUI macOS 工具，将可编
 
 ## 获取应用与权限
 
-最新源码版本为 1.0.3。使用 Swift 6.2 或更新版本运行 `./scripts/build-app-bundle.sh`，生成的应用位于 `dist/TypeClipboard.app`。本仓库尚未发布预构建的 [Release](https://github.com/KumiKo2007/TypeClipboard/releases)。应用需要 macOS 13 或更高版本。
+从 [v1.0.3 Release](https://github.com/KumiKo2007/TypeClipboard/releases/tag/v1.0.3) 下载 `TypeClipboard-1.0.3-macos-universal.zip`。它支持运行 macOS 13 或更新版本的 Intel 与 Apple 芯片 Mac。解压后打开 `TypeClipboard.app`。应用使用临时签名，未经 Apple 公证；若 macOS 阻止打开，请右键点击应用并选择“打开”。下载页附有 `.sha256` 校验文件。
+
+如需自行构建，请使用 Swift 6.2 或更新版本运行 `./scripts/build-app-bundle.sh`，生成的应用位于 `dist/TypeClipboard.app`。
 
 首次启动时，在应用提示中点击“打开设置”，于“隐私与安全性 ▸ 辅助功能”启用 TypeClipboard，然后重新启动。若提示无法监听键盘，还需在“隐私与安全性 ▸ 输入监控”中启用 TypeClipboard。取消监听无法启动时，应用不会开始模拟输入。
 
