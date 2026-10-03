@@ -24,14 +24,14 @@ enum TypingEngineError: LocalizedError {
 final class TypingEngine {
     private let keyPressDuration: UInt64 = 15_000_000 // 15 ms between key down and key up
 
-    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode) async throws {
+    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode, compensateAutoClosingBraces: Bool = false) async throws {
         guard !text.isEmpty else { throw TypingEngineError.emptyBuffer }
         guard EventPostingPermission.isGranted() else { throw TypingEngineError.accessibilityDenied }
 
         let sanitizedDelay = max(characterDelay, 0)
         let eventSource = CGEventSource(stateID: .hidSystemState)
 
-        for action in TypingSequence.actions(for: text) {
+        for action in TypingSequence.actions(for: text, compensateAutoClosingBraces: compensateAutoClosingBraces) {
             switch action {
             case .text(let value):
                 try await send(text: value, using: eventSource, interCharacterDelay: sanitizedDelay)
@@ -42,6 +42,8 @@ final class TypingEngine {
                 try await send(keyCode: CGKeyCode(kVK_Return), flags: flags, using: eventSource, interCharacterDelay: sanitizedDelay)
             case .tab:
                 try await send(keyCode: CGKeyCode(kVK_Tab), flags: [], using: eventSource, interCharacterDelay: sanitizedDelay)
+            case .deleteForward:
+                try await send(keyCode: CGKeyCode(kVK_ForwardDelete), flags: [], using: eventSource, interCharacterDelay: sanitizedDelay)
             }
         }
 

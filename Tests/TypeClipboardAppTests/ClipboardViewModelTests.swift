@@ -88,6 +88,18 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertEqual(typingEngine.invocations.first?.newlineMode, .shiftEnter)
     }
 
+    func testBraceCompensationSelectionReachesTypingEngine() async {
+        let typingEngine = TypingEngineMock()
+        let viewModel = makeViewModel(typingEngine: typingEngine)
+        viewModel.bufferText = "int main() {}"
+        viewModel.countdownSeconds = 0
+
+        viewModel.typeBuffer(compensateAutoClosingBraces: true)
+        let finished = await waitUntil { !viewModel.isTyping }
+        XCTAssertTrue(finished)
+        XCTAssertEqual(typingEngine.invocations.first?.compensateAutoClosingBraces, true)
+    }
+
     func testPhysicalKeyCancelsDuringCountdown() async {
         let monitor = KeyMonitorMock()
         let typingEngine = TypingEngineMock()
@@ -185,12 +197,13 @@ private final class TypingEngineMock: TypingEngineProtocol {
         let characterDelay: Double
         let appendReturn: Bool
         let newlineMode: NewlineMode
+        let compensateAutoClosingBraces: Bool
     }
 
     private(set) var invocations: [Invocation] = []
 
-    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode) async throws {
-        invocations.append(Invocation(text: text, characterDelay: characterDelay, appendReturn: appendReturn, newlineMode: newlineMode))
+    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode, compensateAutoClosingBraces: Bool) async throws {
+        invocations.append(Invocation(text: text, characterDelay: characterDelay, appendReturn: appendReturn, newlineMode: newlineMode, compensateAutoClosingBraces: compensateAutoClosingBraces))
     }
 }
 

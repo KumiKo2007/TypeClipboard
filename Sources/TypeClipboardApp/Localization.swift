@@ -55,6 +55,8 @@ enum L10n {
         "Enter": "Enter",
         "Shift+Enter": "Shift+Enter",
         "Choose the mode that inserts a newline in the target editor.": "请选择能在目标编辑器中插入换行的模式。",
+        "Remove editor-inserted closing braces": "移除编辑器自动补出的右花括号",
+        "Use only when the target editor adds } after typing {. Start at the end of an empty editor.": "仅在目标编辑器输入 { 后自动补出 } 时使用；请从空白编辑器末尾开始输入。",
         "Any physical key cancels typing.": "按实体键盘上的任意键可取消输入。",
         "Enable Accessibility": "启用辅助功能权限",
         "macOS requires accessibility permission so TypeClipboard can simulate keystrokes. Select “Open Settings”, enable TypeClipboard, then restart the app to apply the change.": "macOS 需要辅助功能权限才能模拟按键。点击“打开设置”，启用 TypeClipboard，然后重新启动应用。",

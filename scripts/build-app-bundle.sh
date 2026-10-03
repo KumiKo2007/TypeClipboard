@@ -4,8 +4,8 @@ set -euo pipefail
 APP_NAME="TypeClipboard"
 EXECUTABLE_NAME="TypeClipboardApp"
 IDENTIFIER="com.example.typeclipboard"
-VERSION=${VERSION:-1.0.0}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-1.0.3}
+BUILD=${BUILD:-4}
 
 ROOT_DIR=$(cd "$(dirname "$0")"/.. && pwd)
 BUILD_DIR="$ROOT_DIR/.build/release"

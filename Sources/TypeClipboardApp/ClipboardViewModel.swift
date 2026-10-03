@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 protocol TypingEngineProtocol {
-    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode) async throws
+    func type(text: String, characterDelay: Double, appendReturn: Bool, newlineMode: NewlineMode, compensateAutoClosingBraces: Bool) async throws
 }
 
 extension TypingEngine: TypingEngineProtocol {}
@@ -229,7 +229,7 @@ final class ClipboardViewModel: ObservableObject {
         }
     }
 
-    func typeBuffer(newlineMode: NewlineMode = .enter) {
+    func typeBuffer(newlineMode: NewlineMode = .enter, compensateAutoClosingBraces: Bool = false) {
         refreshAccessibilityStatus()
 
         guard !bufferText.isEmpty else {
@@ -308,7 +308,13 @@ final class ClipboardViewModel: ObservableObject {
                 }
 
                 try Task.checkCancellation()
-                try await self.typingEngine.type(text: text, characterDelay: delay, appendReturn: appendReturn, newlineMode: newlineMode)
+                try await self.typingEngine.type(
+                    text: text,
+                    characterDelay: delay,
+                    appendReturn: appendReturn,
+                    newlineMode: newlineMode,
+                    compensateAutoClosingBraces: compensateAutoClosingBraces
+                )
                 let appended = appendReturn ? 1 : 0
                 self.statusMessage = StatusMessage(
                     text: "Sent {0} characters. Check the target content.",

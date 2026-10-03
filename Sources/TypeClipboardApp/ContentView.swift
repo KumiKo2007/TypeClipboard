@@ -6,6 +6,8 @@ struct ContentView: View {
     @AppStorage("inputProfile") private var inputProfileRaw = "xuexitong"
     @AppStorage("xuexitongNewlineMode") private var xuexitongNewlineModeRaw = NewlineMode.enter.rawValue
     @AppStorage("generalNewlineMode") private var generalNewlineModeRaw = NewlineMode.enter.rawValue
+    @AppStorage("xuexitongCompensateAutoClosingBraces") private var xuexitongCompensateAutoClosingBraces = true
+    @AppStorage("generalCompensateAutoClosingBraces") private var generalCompensateAutoClosingBraces = false
     @FocusState private var bufferFocused: Bool
 
     private var language: AppLanguage { AppLanguage(rawValue: appLanguageRaw) ?? .automatic }
@@ -18,6 +20,18 @@ struct ContentView: View {
             set: { value in
                 if inputProfileRaw == "xuexitong" { xuexitongNewlineModeRaw = value }
                 else { generalNewlineModeRaw = value }
+            }
+        )
+    }
+    private var selectedBraceCompensation: Bool {
+        inputProfileRaw == "xuexitong" ? xuexitongCompensateAutoClosingBraces : generalCompensateAutoClosingBraces
+    }
+    private var braceCompensationBinding: Binding<Bool> {
+        Binding(
+            get: { selectedBraceCompensation },
+            set: { value in
+                if inputProfileRaw == "xuexitong" { xuexitongCompensateAutoClosingBraces = value }
+                else { generalCompensateAutoClosingBraces = value }
             }
         )
     }
@@ -144,7 +158,10 @@ struct ContentView: View {
                 }
 
                 Button {
-                    viewModel.typeBuffer(newlineMode: selectedNewlineMode)
+                    viewModel.typeBuffer(
+                        newlineMode: selectedNewlineMode,
+                        compensateAutoClosingBraces: selectedBraceCompensation
+                    )
                 } label: {
                     Label(tr(viewModel.isTyping ? "Typing…" : "Type Now"), systemImage: viewModel.isTyping ? "hourglass.circle.fill" : "keyboard")
                         .font(.headline)
@@ -218,6 +235,12 @@ struct ContentView: View {
                         Text(tr("Enter")).tag(NewlineMode.enter.rawValue)
                         Text(tr("Shift+Enter")).tag(NewlineMode.shiftEnter.rawValue)
                     }
+                    Toggle(isOn: braceCompensationBinding) {
+                        Text(tr("Remove editor-inserted closing braces"))
+                    }
+                    Text(tr("Use only when the target editor adds } after typing {. Start at the end of an empty editor."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Text(tr("Choose the mode that inserts a newline in the target editor."))
                         .font(.caption)
                         .foregroundStyle(.secondary)

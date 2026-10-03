@@ -12,7 +12,7 @@ Inspired by [jlaundry/TypeClipboard](https://github.com/jlaundry/TypeClipboard) 
 - Capture clipboard contents into an editable buffer
 - Adjustable countdown so you can focus the target window before typing begins
 - Per-character delay, real Enter or Shift+Enter events for source line breaks, and an optional trailing Return (off by default)
-- Manually selected Xuexitong and General input profiles that remember their newline mode
+- Manually selected Xuexitong and General input profiles that remember newline and brace-pairing settings
 - English and Simplified Chinese interface, with a system-language option
 - Inline guidance for macOS Accessibility permission (required to synthesize keystrokes)
 - Status banners, manual capture, and cancellation by any new physical keyboard key during countdown or typing
@@ -35,6 +35,7 @@ The physical-key cancellation feature also needs permission to monitor keyboard 
 - **Capture**: Click *Capture Clipboard* (⇧⌘V) to pull the current clipboard into the buffer.  
 - **Edit**: Review or edit text in the buffer; metrics update live.  
 - **Choose a profile**: Select *Xuexitong* or *General*, then choose *Enter* or *Shift+Enter* as the newline key. Profiles are selected manually and remember their own settings; the app does not read browser URLs.
+- **Auto-closing braces**: If the target inserts `}` when you type `{`, enable *Remove editor-inserted closing braces*. Xuexitong starts with this on; General starts with it off. Start in an empty editor. The app sends Forward Delete immediately after each `{` to remove the generated `}`. Turn this off if the editor does not auto-pair braces, especially when text already exists to the right of the cursor.
 - **Type**: Click *Type Now* to send the buffer as keystrokes. Source line breaks use the selected newline key; tabs are sent as Tab key events. Use countdown and delay controls to match the target app’s latency.
 - **Cancel**: Press any new physical keyboard key, including a modifier, or click *Cancel Typing* during the countdown or typing. The cancelling key is intercepted so it does not enter the target.
 - **Automation**: Turn on *Update buffer when the clipboard changes* only if you want automatic capture; it’s off by default to avoid overwriting edits.  
@@ -80,6 +81,7 @@ swift test
 - **Nothing types**: Accessibility permission not granted or the target field rejects synthetic input (some secure fields do).  
 - **Keyboard monitoring unavailable**: Enable Input Monitoring for TypeClipboard; typing is blocked until the cancellation monitor starts successfully.
 - **Newlines or indentation differ**: Try the other newline mode and check the target editor's automatic indentation settings. TypeClipboard does not silently convert tabs to spaces.
+- **Extra `}` characters**: Check whether the target auto-inserts `}` after `{`. Enable brace compensation only in that case. If the editor adds a `}` only after Enter, disable its automatic brace completion in the editor settings before typing; this option only handles an immediately inserted pair.
 - **Buffer changed while editing**: Leave auto-capture off, or recapture manually.  
 - **Too fast/slow**: Adjust the per-character delay slider (0–250 ms) and/or countdown.  
 - **Blocked at launch**: Right-click the app → Open to bypass Gatekeeper for ad-hoc builds.
